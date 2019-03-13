@@ -20,10 +20,14 @@ class MyStreamListener(tweepy.StreamListener):
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-        with open(self.FILE_NAME, "a") as tweet_file:
-            tweet_file.writelines(self.tweets)
+        if self.tweets:
+            with open(self.FILE_NAME, "a") as tweet_file:
+                tweet_file.writelines(self.tweets)
         print("Saved data and finished downloading tweets. Date: {}".format(datetime.datetime.now()))
-
+        if (exception_type == KeyboardInterrupt):
+            print("Exiting program because of KeyboardInterrupt")
+            return True
+            
     def on_data(self, data):
         self.tweets.append(data)
 
