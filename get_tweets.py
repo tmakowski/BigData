@@ -30,10 +30,18 @@ class MyStreamListener(tweepy.StreamListener):
     def on_data(self, data):
         # string to dict
         data = json.loads(data)
+        
         # print(data.get('text'))
-        # if no id or if it's retweet do nothing
+        #if no id or if it's retweet do nothing
         if data.get('id') and re.search('^RT', data.get('text')) == None: 
-            data = pd.DataFrame(data=[[data.get('id'), data.get('text'), data.get('created_at'), data.get('favorite_count'), data.get('retweet_count')]], columns=['id','text','created_at','favorive_count','retweet_count'])
+            data = pd.DataFrame(data=[[data.get('id'), \
+                                    data.get('text'), \
+                                    data.get('created_at'), \
+                                    data.get('favorite_count'), \
+                                    data.get('retweet_count'),\
+                                    data.get('user').get('name'),\
+                                    data.get('user').get('screen_name')]], \
+                                    columns=['id','text','created_at','favorive_count','retweet_count','name','screen_name'])
             # remove \n from text
             data['text'] = data['text'].replace(to_replace= '\\n', value= '', regex=True)
             with open(self.FILE_NAME, 'a', encoding="utf-8") as f:
