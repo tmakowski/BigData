@@ -1,6 +1,6 @@
 from newsapi import NewsApiClient
 from newsapi.newsapi_exception import NewsAPIException
-from .scrapers import SCRAPER_DICT
+from scrapers import SCRAPER_DICT
 import pandas as pd
 import csv
 import os
@@ -8,7 +8,7 @@ import math
 import time
 
 
-class NewsAPI:
+class NewsApi:
     def __init__(self, token=None, sources=tuple(SCRAPER_DICT.keys())):
         """
         Konstruktor klasy NewsAPI. Tworzy nowy obiekt z polem za pomocą którego odpytujemy News API
@@ -21,8 +21,8 @@ class NewsAPI:
 
         # Jeśli nie podamy argumentu, to jest on odczytywany z pliku w którym powinien być sam klucz
         if token is None:
-            assert os.path.isfile("news_api/token.txt")  # Plik powinen znajdować się w miejscu pozostałych plików
-            with open("news_api/token.txt", "r") as token_file:
+            assert os.path.isfile("token.txt")  # Plik powinen znajdować się w miejscu pozostałych plików
+            with open("token.txt", "r") as token_file:
                 token = token_file.readline().strip()
 
         self.api = NewsApiClient(api_key=token)
@@ -109,10 +109,10 @@ class NewsAPI:
         """
         csv_exists = os.path.isfile(csv_path)
         with open(csv_path, "a", encoding="utf-8") as csv_file:
-            urls = set(pd.read_csv(csv_file).url)
+            urls = set(pd.read_csv(csv_path).url) if csv_exists else set()
 
             # Zdefiniowanie obiektu zapisującego
-            writer = csv.DictWriter(csv_file, self.get_results(index).keys())
+            writer = csv.DictWriter(csv_file, fieldnames=("source_id", "date", "url", "title", "content"))
 
             # Zapisanie nagłówka
             if not csv_exists:
@@ -142,10 +142,10 @@ class NewsAPI:
             # Co obrót pobiera dane z przedziału (from_time, to_time), który ma długość ~interwału
             while True:
                 for i in range(interval):
-                    print("Waiting... %02d" % (interval-i), end="\r")
+                    print("\rWaiting... %02d" % (interval-i), end="")
                     time.sleep(1)
 
-                print("%-13s" % "Working...")
+                print("\r%-13s" % "Working...", end="")
                 to_time = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
                 self.get_articles(keyword, from_param=from_time, to=to_time, **kwargs)
                 self.save_to_csv(csv_path)
