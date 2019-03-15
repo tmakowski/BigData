@@ -154,7 +154,7 @@ class NewsApi:
                 from_time = to_time
 
         except KeyboardInterrupt:
-            print("My watch has ended.")
+            print("\nMy watch has ended.")
 
         except NewsAPIException as err:
             print(err)
