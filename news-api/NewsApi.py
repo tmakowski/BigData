@@ -1,23 +1,26 @@
+from datetime import datetime, timedelta
 from newsapi import NewsApiClient
 from newsapi.newsapi_exception import NewsAPIException
 from scrapers import SCRAPER_DICT
+from time import sleep
 import pandas as pd
 import csv
 import os
 import math
-import time
 
 
 class NewsApi:
-    def __init__(self, token=None, sources=tuple(SCRAPER_DICT.keys())):
+    def __init__(self, token=None, sources=tuple(SCRAPER_DICT.keys()), keep_blanks=True):
         """
         Konstruktor klasy NewsAPI. Tworzy nowy obiekt z polem za pomocą którego odpytujemy News API
         i listą źródeł, z których chcemy pozyskiwać artykuły.
         :param token: klucz uwierzytelniający
         :param sources: lista źródeł do wykorzystania (domyślnie: wszystkie obsługiwane)
+        :param keep_blanks: flaga, czy zapisywać tytuły i info artykułach bez treści do pliku (źle zescrapowane etc.)
         """
         assert isinstance(sources, tuple)
         assert len(sources) > 0
+        assert isinstance(keep_blanks, bool)
 
         # Jeśli nie podamy argumentu, to jest on odczytywany z pliku w którym powinien być sam klucz
         if token is None:
@@ -28,6 +31,7 @@ class NewsApi:
         self.api = NewsApiClient(api_key=token)
         self.articles_results = []
         self.sources = sources
+        self.keep_blanks = keep_blanks
 
     def clear_results(self):
         """
@@ -57,6 +61,7 @@ class NewsApi:
         assert isinstance(keyword, str)
         assert "page" not in kwargs.keys()       # Funkcja manipuluje tym argumentem
         assert "page_size" not in kwargs.keys()  # Ustawiony na sztywno na maksymalną wartość
+        assert "language" not in kwargs.keys()   # Tylko angielski
 
         # Inicjalizacja zmiennych do pętli
         i = 0
@@ -74,6 +79,7 @@ class NewsApi:
                     q=keyword,
                     page=page_nr,
                     sources=current_sources,
+                    language="en",
                     **kwargs
                 )
                 articles += current_response.get("articles")
@@ -120,44 +126,61 @@ class NewsApi:
 
             # Pętla po zapisanych artykułach
             for article in self.get_results(index):
-                if not article["url"] in urls:  # Sprawdzenie, czy artykuł nie jest duplikatem
+                # Sprawdzenie, czy artykuł nie jest duplikatem i czy zapisywać, jeśli nie ma treści
+                if not article["url"] in urls and (self.keep_blanks or article["content"] != ""):
                     urls.add(article["url"])    # Dodanie zapisanego adresu url do puli z którą weryfikujemy duplikaty
                     writer.writerow(article)    # Zapisanie artykułu
 
     def watch(self, csv_path, interval, keyword, **kwargs):
         """
         Funkcja, która co określony czas odpytuje API w poszukiwaniu artykułów o podanym słowie kluczowym.
-        :param csv_path: ścieżka do wynikowego pliku csv (UWAGA: zakładamy, że nagłówek już jest w pliku)
+        :param csv_path: ścieżka do wynikowego pliku csv
         :param interval: czas oczekiwania między odpytaniami
         :param keyword: szukana fraza
         :param kwargs: pozostałe argumenty przekazywane do wrappera API
         """
         # Sprawdzenie, czy przy 1 stronie na interwał liczba odpytań się zepnie
         assert interval / math.ceil(len(self.sources)/20) > 1440*60 / 1000
-        assert "from_param" not in kwargs.keys()  # Funkcja korzysta z tego parametrów
-        assert "to" not in kwargs.keys()          # Funkcja korzysta z tego parametrów
+        assert "from_param" not in kwargs.keys()  # Funkcja korzysta z tego parametru
+        assert "to" not in kwargs.keys()          # Funkcja korzysta z tego parametru
 
-        from_time = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())  # Aktualny czas
+        from_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")  # Aktualny czas
         try:
             # Co obrót pobiera dane z przedziału (from_time, to_time), który ma długość ~interwału
             while True:
-                for i in range(interval):
-                    print("\rWaiting... %02d" % (interval-i), end="")
-                    time.sleep(1)
+                try:
+                    for i in range(interval):
+                        print("\rWaiting... %02d" % (interval-i), end="")
+                        sleep(1)
 
-                print("\r%-13s" % "Working...", end="")
-                to_time = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-                self.get_articles(keyword, from_param=from_time, to=to_time, **kwargs)
-                self.save_to_csv(csv_path)
-                self.clear_results()
+                    print("\r%-13s" % "Working...", end="")
+                    to_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                    self.get_articles(keyword, from_param=from_time, to=to_time, **kwargs)
+                    self.save_to_csv(csv_path)
+                    self.clear_results()
 
-                from_time = to_time
+                    from_time = to_time
+
+                except NewsAPIException as err:  # Błędy najpewniej spowodowane problemami z połączeniem
+                    print(err)
 
         except KeyboardInterrupt:
             print("\nMy watch has ended.")
 
-        except NewsAPIException as err:
-            print(err)
+    def get_past_month(self, csv_path, keyword, **kwargs):
+        """
+        Funkcja zapisuje artykuły z ostatnich 28 dni do pliku csv.
+        :param csv_path: ścieżka do wynikowego pliku csv
+        :param keyword: szukana fraza
+        :param kwargs: pozostałe argumenty przekazywane do wrappera API
+        """
+        assert "from_param" not in kwargs.keys()  # Funkcja korzysta z tego parametru
+        assert "to" not in kwargs.keys()          # Funkcja korzysta z tego parametru
 
-    def get_past_month(self, csv_path, **kwargs):
-        pass
+        current_time = datetime.utcnow()
+
+        for days_back in range(1, 29):
+            curr_day = (current_time - timedelta(days=days_back)).strftime("%Y-%m-%d")
+            self.get_articles(keyword, from_param=curr_day, to=curr_day, **kwargs)
+            self.save_to_csv(csv_path)
+            self.clear_results()
