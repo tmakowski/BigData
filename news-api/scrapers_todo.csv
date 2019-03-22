@@ -18,8 +18,8 @@ daily-mail,http://www.dailymail.co.uk/home/index.html,
 engadget,https://www.engadget.com,
 financial-post,http://business.financialpost.com,
 financial-times,http://www.ft.com/home/uk,
-fortune,http://fortune.com,
-fox-news,http://www.foxnews.com,
+fortune,http://fortune.com,blokujący pop-up/wymaga subskrypcji
+fox-news,http://www.foxnews.com,tak
 hacker-news,https://news.ycombinator.com,
 ign,http://www.ign.com,
 independent,http://www.independent.co.uk,
@@ -39,7 +39,7 @@ recode,http://www.recode.net,
 reuters,http://www.reuters.com,
 rte,https://www.rte.ie/news,
 techcrunch,https://techcrunch.com,
-techradar,http://www.techradar.com,
+techradar,http://www.techradar.com,blokujący pop-up/wymaga subskrypcji
 the-american-conservative,http://www.theamericanconservative.com/,
 the-economist,http://www.economist.com,
 the-globe-and-mail,https://www.theglobeandmail.com,
@@ -51,9 +51,8 @@ the-next-web,http://thenextweb.com,
 the-telegraph,http://www.telegraph.co.uk,
 the-times-of-india,http://timesofindia.indiatimes.com,
 the-verge,http://www.theverge.com,
-the-wall-street-journal,http://www.wsj.com,
-the-washington-post,https://www.washingtonpost.com,
-the-washington-times,https://www.washingtontimes.com/,
+the-wall-street-journal,http://www.wsj.com,blokujący pop-up/wymaga subskrypcji
+the-washington-post,https://www.washingtonpost.com,blokujący pop-up/wymaga subskrypcji
 time,http://time.com,
 usa-today,http://www.usatoday.com/news,tak
 wired,https://www.wired.com,

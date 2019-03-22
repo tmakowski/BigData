@@ -35,6 +35,14 @@ def get_content_cnn(url):
     ])
 
 
+def get_content_foxnews(url):
+    page = get_page(url)
+    return " ".join([el.text
+        for el in page.find("div[class='article-body'] > p")
+        if el.text is not None and el.find("strong", first=True) is None # Pomijamy nagłówki innych artykułów wplecione w tekst -- są one pogrubiane
+    ])
+
+
 def get_content_thenewyorktimes(url):
     page = get_page(url)
     return " ".join([
@@ -57,6 +65,7 @@ SCRAPER_DICT = {
     "bbc-news": get_content_bbcnews,
     "business-insider": get_content_bussinessinsider,
     "cnn": get_content_cnn,
+    "fox-news": get_content_foxnews,
     "the-new-york-times": get_content_thenewyorktimes,
     "usa-today": get_content_usatoday
 }
