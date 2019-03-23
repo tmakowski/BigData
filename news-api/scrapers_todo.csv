@@ -1,9 +1,9 @@
-id,url,gotowy
-abc-news,https://abcnews.go.com,
-abc-news-au,http://www.abc.net.au/news,
-al-jazeera-english,http://www.aljazeera.com,
-ars-technica,http://arstechnica.com,
-associated-press,https://apnews.com/,
+id,url,status
+abc-news,https://abcnews.go.com,tak
+abc-news-au,http://www.abc.net.au/news,tak
+al-jazeera-english,http://www.aljazeera.com,tak
+ars-technica,http://arstechnica.com,tak
+associated-press,https://apnews.com/,tak
 australian-financial-review,http://www.afr.com,
 axios,https://www.axios.com,
 bbc-news,http://www.bbc.co.uk/news,tak
