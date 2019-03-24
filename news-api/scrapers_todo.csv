@@ -4,15 +4,13 @@ abc-news-au,http://www.abc.net.au/news,tak
 al-jazeera-english,http://www.aljazeera.com,tak
 ars-technica,http://arstechnica.com,tak
 associated-press,https://apnews.com/,tak
-australian-financial-review,http://www.afr.com,
-axios,https://www.axios.com,
+axios,https://www.axios.com,tak
 bbc-news,http://www.bbc.co.uk/news,tak
-bloomberg,http://www.bloomberg.com,
-breitbart-news,http://www.breitbart.com,
+bloomberg,http://www.bloomberg.com,blokujący pop-up/wymaga subskrypcji
+breitbart-news,http://www.breitbart.com,tak
 business-insider,http://www.businessinsider.com,tak
-cbc-news,http://www.cbc.ca/news,
-cbs-news,http://www.cbsnews.com,
-cnbc,http://www.cnbc.com,
+cbc-news,http://www.cbc.ca/news,tak
+cnbc,http://www.cnbc.com,tak (łapie trochę śmieci)
 cnn,http://us.cnn.com,tak
 daily-mail,http://www.dailymail.co.uk/home/index.html,
 engadget,https://www.engadget.com,

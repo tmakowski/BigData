@@ -36,7 +36,7 @@ def get_content_arstechnica(url):
     page = get_page(url)
     return " ".join([
         el.text
-        for el in page.find("div[itemprop='articleBody'] p,h2")
+        for el in page.find("div[itemprop='articleBody'] p, div[itemprop='articleBody'] h2")
         if el.text is not None])
 
 
@@ -48,6 +48,14 @@ def get_content_associatedpress(url):
         if el.text is not None])
 
 
+def get_content_axios(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[class^='StoryBody'] div > ul, div[class^='StoryBody'] div > p")
+        if el.text is not None])
+
+
 def get_content_bbcnews(url):
     page = get_page(url)
     return " ".join([
@@ -56,11 +64,35 @@ def get_content_bbcnews(url):
         if el.text is not None])
 
 
+def get_content_beitbartnews(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[class='entry-content'] p, div[class='entry-content'] h2")
+        if el.text is not None])
+
+
 def get_content_bussinessinsider(url):
     page = get_page(url)
     return " ".join([
         el.text
         for el in page.find("div[data-piano-inline-content-wrapper] p")
+        if el.text is not None])
+
+
+def get_content_cbcnews(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[class='story'] > span > p, div[class='story'] > span > h2")
+        if el.text is not None])
+
+
+def get_content_cnbc(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[class='group'] p")
         if el.text is not None])
 
 
@@ -101,8 +133,12 @@ SCRAPER_DICT = {
     "al-jazeera-english": get_content_aljazeeraenglish,
     "ars-technica": get_content_arstechnica,
     "associated-press": get_content_associatedpress,
+    "axios": get_content_axios,
     "bbc-news": get_content_bbcnews,
+    "breitbart-news": get_content_breitbartnews,
     "business-insider": get_content_bussinessinsider,
+    "cbc-news": get_content_cbcnews,
+    "cnbc": get_content_cnbc,
     "cnn": get_content_cnn,
     "fox-news": get_content_foxnews,
     "the-new-york-times": get_content_thenewyorktimes,
