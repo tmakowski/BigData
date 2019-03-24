@@ -64,7 +64,7 @@ def get_content_bbcnews(url):
         if el.text is not None])
 
 
-def get_content_beitbartnews(url):
+def get_content_breitbartnews(url):
     page = get_page(url)
     return " ".join([
         el.text
