@@ -6,6 +6,12 @@ Obsługiwane serwisy (gotowe scrapery): status jest w pliku `scrapers_todo.csv`
 
 **UWAGA:** trzeba uważać na kodowanie w wynikowych csv-kach.
 
-## ToDo
-- [ ] funkcja do pobierania przeszłych artykułów
-- [ ] dodać więcej serwisów (dopisać scrapery)
+## Przykład wykorzystania
+
+1. Umieścić token w pliku `token.txt`
+1. Zaimportować klasę `NewsApi` i stworzyć nowy obiekt:
+```
+from NewsApi import NewsApi
+api = NewsApi()
+```
+1. Uruchomienie jednej z dwóch opcji, to jest: `api.watch(<results_csv_path>, <interval>, <keyword>)` albo `api.get_past_month(<results_csv_path, <keyword>)`, gdzie `<keyword>` to szukana fraza, a `<interval>` to czas pauzy w sekundach pomiędzy pobraniem danych.
