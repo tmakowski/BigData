@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from newsapi import NewsApiClient
 from newsapi.newsapi_exception import NewsAPIException
+from requests.exceptions import RequestException
 from scrapers import SCRAPER_DICT
 from time import sleep
 import pandas as pd
@@ -163,6 +164,9 @@ class NewsApi:
 
                 except NewsAPIException as err:  # Błędy najpewniej spowodowane problemami z połączeniem
                     print(err)
+                    
+                except RequestException:  # Jeśli zdarzy się jakiś błąd z siecią, to po prostu ponawiamy próbę w kolejnej iteracji
+                    continue
 
         except KeyboardInterrupt:
             print("\nMy watch has ended.")
