@@ -139,7 +139,7 @@ def get_content_thenewyorktimes(url):
     page = get_page(url)
     return " ".join([
         el.text
-        for el in thenewyorktimes_page.find("section[name='articleBody'] p")
+        for el in page.find("section[name='articleBody'] p")
         if el.text is not None])
 
 
