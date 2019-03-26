@@ -15,11 +15,9 @@ cnn,http://us.cnn.com,tak
 daily-mail,http://www.dailymail.co.uk/home/index.html,tak
 engadget,https://www.engadget.com,tak (łapie trochę śmieci)
 financial-post,http://business.financialpost.com,tak
-financial-times,http://www.ft.com/home/uk,
+financial-times,http://www.ft.com/home/uk,blokujący pop-up/wymaga subskrypcji
 fortune,http://fortune.com,blokujący pop-up/wymaga subskrypcji
 fox-news,http://www.foxnews.com,tak
-hacker-news,https://news.ycombinator.com,
-ign,http://www.ign.com,
 independent,http://www.independent.co.uk,
 mashable,http://mashable.com,
 metro,http://metro.co.uk,

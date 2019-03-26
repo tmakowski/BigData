@@ -135,6 +135,14 @@ def get_content_foxnews(url):
         if el.text is not None and el.find("strong", first=True) is None])  # Pomijamy nagłówki innych artykułów wplecione w tekst -- są one pogrubiane
 
 
+def get_content_independent(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[class='body-content'] > p")[:-3]  # Wykluczamy ostatnie parę elementów, bo to śmieci, które są zwykle na końcu artykułu
+        if el.text is not None])
+
+
 def get_content_thenewyorktimes(url):
     page = get_page(url)
     return " ".join([
@@ -168,6 +176,7 @@ SCRAPER_DICT = {
     "engadget": get_content_engadget,
     "financial-post": get_content_financialpost,
     "fox-news": get_content_foxnews,
+    "independent": get_content_independent,
     "the-new-york-times": get_content_thenewyorktimes,
     "usa-today": get_content_usatoday
 }
