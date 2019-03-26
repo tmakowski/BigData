@@ -104,6 +104,30 @@ def get_content_cnn(url):
         if el.text is not None])
 
 
+def get_content_dailymail(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[itemprop='articleBody'] p")
+        if el.text is not None])
+
+
+def get_content_engadget(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[class^='article-text'] p")
+        if el.text is not None])
+
+
+def get_content_financialpost(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[itemprop='articleBody'] > p")
+        if el.text is not None])
+
+
 def get_content_foxnews(url):
     page = get_page(url)
     return " ".join([el.text
@@ -140,6 +164,9 @@ SCRAPER_DICT = {
     "cbc-news": get_content_cbcnews,
     "cnbc": get_content_cnbc,
     "cnn": get_content_cnn,
+    "daily-mail": get_content_dailymail,
+    "engadget": get_content_engadget,
+    "financial-post": get_content_financialpost,
     "fox-news": get_content_foxnews,
     "the-new-york-times": get_content_thenewyorktimes,
     "usa-today": get_content_usatoday
