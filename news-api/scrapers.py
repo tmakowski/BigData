@@ -135,11 +135,35 @@ def get_content_foxnews(url):
         if el.text is not None and el.find("strong", first=True) is None])  # Pomijamy nagłówki innych artykułów wplecione w tekst -- są one pogrubiane
 
 
+def get_content_independent(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[class='body-content'] > p")[:-3]  # Wykluczamy ostatnie parę elementów, bo to śmieci, które są zwykle na końcu artykułu
+        if el.text is not None])
+
+
+def get_content_mashable(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("section[class^='article-content'] > p")
+        if el.text is not None])
+
+
+def get_content_mirror(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[class='article-body'] > p")
+        if el.text is not None])
+
+
 def get_content_thenewyorktimes(url):
     page = get_page(url)
     return " ".join([
         el.text
-        for el in thenewyorktimes_page.find("section[name='articleBody'] p")
+        for el in page.find("section[name='articleBody'] p")
         if el.text is not None])
 
 
@@ -168,6 +192,9 @@ SCRAPER_DICT = {
     "engadget": get_content_engadget,
     "financial-post": get_content_financialpost,
     "fox-news": get_content_foxnews,
+    "independent": get_content_independent,
+    "mashable": get_content_mashable,
+    "mirror": get_content_mirror,
     "the-new-york-times": get_content_thenewyorktimes,
     "usa-today": get_content_usatoday
 }
