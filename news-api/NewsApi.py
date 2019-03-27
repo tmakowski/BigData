@@ -146,32 +146,32 @@ class NewsApi:
         assert "to" not in kwargs.keys()          # Funkcja korzysta z tego parametru
 
         from_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")  # Aktualny czas
-        try:
-            # Co obrót pobiera dane z przedziału (from_time, to_time), który ma długość ~interwału
-            while True:
-                try:
-                    for i in range(interval):
-                        print("\rWaiting... %03d" % (interval-i), end="")
-                        sleep(1)
+        
+        # Co obrót pobiera dane z przedziału (from_time, to_time), który ma długość równą wartości interwału
+        while True:
+            try:
+                for i in range(interval):
+                    print("\rWaiting... %03d" % (interval-i), end="")
+                    sleep(1)
 
-                    print("\r%-13s" % "Working...", end="")
-                    to_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-                    self.get_articles(keyword, from_param=from_time, to=to_time, **kwargs)
-                    if self.get_results(-1) != list():
-                        self.save_to_csv(csv_path)
-                    self.clear_results()
+                print("\r%-13s" % "Working...", end="")
+                to_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                self.get_articles(keyword, from_param=from_time, to=to_time, **kwargs)
+                if self.get_results(-1) != list():
+                    self.save_to_csv(csv_path)
+                self.clear_results()
 
-                    from_time = to_time
+                from_time = to_time
 
-                except NewsAPIException as err:  # Błędy najpewniej spowodowane problemami z połączeniem
-                    print(err)
-                    continue
+            except NewsAPIException as err:  # Błędy najpewniej spowodowane problemami z połączeniem
+                print(err)
+                continue
                     
-                except RequestException:  # Jeśli zdarzy się jakiś błąd z siecią, to po prostu ponawiamy próbę w kolejnej iteracji
-                    continue
+            except RequestException:  # Jeśli zdarzy się jakiś błąd z siecią, to po prostu ponawiamy próbę w kolejnej iteracji
+                continue
 
-        except KeyboardInterrupt:
-            print("\nMy watch has ended.")
+            except KeyboardInterrupt:
+                print("\nMy watch has ended.")
 
     def get_past_month(self, csv_path, keyword, **kwargs):
         """
