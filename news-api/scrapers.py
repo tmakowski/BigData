@@ -143,6 +143,22 @@ def get_content_independent(url):
         if el.text is not None])
 
 
+def get_content_mashable(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("section[class^='article-content'] > p")
+        if el.text is not None])
+
+
+def get_content_mirror(url):
+    page = get_page(url)
+    return " ".join([
+        el.text
+        for el in page.find("div[class='article-body'] > p")
+        if el.text is not None])
+
+
 def get_content_thenewyorktimes(url):
     page = get_page(url)
     return " ".join([
@@ -177,6 +193,8 @@ SCRAPER_DICT = {
     "financial-post": get_content_financialpost,
     "fox-news": get_content_foxnews,
     "independent": get_content_independent,
+    "mashable": get_content_mashable,
+    "mirror": get_content_mirror,
     "the-new-york-times": get_content_thenewyorktimes,
     "usa-today": get_content_usatoday
 }

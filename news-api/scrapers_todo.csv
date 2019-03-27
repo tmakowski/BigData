@@ -18,10 +18,9 @@ financial-post,http://business.financialpost.com,tak
 financial-times,http://www.ft.com/home/uk,blokujący pop-up/wymaga subskrypcji
 fortune,http://fortune.com,blokujący pop-up/wymaga subskrypcji
 fox-news,http://www.foxnews.com,tak
-independent,http://www.independent.co.uk,
-mashable,http://mashable.com,
-metro,http://metro.co.uk,
-mirror,http://www.mirror.co.uk/,
+independent,http://www.independent.co.uk,tak
+mashable,http://mashable.com,tak
+mirror,http://www.mirror.co.uk/,tak
 msnbc,http://www.msnbc.com,
 national-review,https://www.nationalreview.com/,
 nbc-news,http://www.nbcnews.com,
