@@ -163,16 +163,18 @@ class NewsApi:
 
                 from_time = to_time
 
-            except NewsAPIException as err:  # Błędy najpewniej spowodowane problemami z połączeniem
-                print(err)
-                continue
+#            except NewsAPIException as err:  # Błędy najpewniej spowodowane problemami z połączeniem
+#                print(err)
+#                continue
                     
-            except RequestException:  # Jeśli zdarzy się jakiś błąd z siecią, to po prostu ponawiamy próbę w kolejnej iteracji
-                continue
+#            except RequestException:  # Jeśli zdarzy się jakiś błąd z siecią, to po prostu ponawiamy próbę w kolejnej iteracji
+#                continue
 
             except KeyboardInterrupt:
                 print("\nMy watch has ended.")
-
+            
+            # Przy jakimkolwiek błędzie przechodzimy dalej, czyli odczekamy kolejną minutę i wtedy odpytamy Api
+            # Kolejne odpytanie po błędzie będzie z dłuższego okresu, ponieważ parametr `from_time` się nie zmieni -- tym samym nie ominiemy żadnego artykułu
             except:
                 pass
 
