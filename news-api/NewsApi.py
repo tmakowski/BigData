@@ -141,7 +141,7 @@ class NewsApi:
         :param kwargs: pozostałe argumenty przekazywane do wrappera API
         """
         # Sprawdzenie, czy przy 1 stronie na interwał liczba odpytań się zepnie
-        assert interval / math.ceil(len(self.sources)/20) > 1440*60 / 1000
+        assert interval / math.ceil(len(self.sources)/20) > 1440*60 / 500
         assert "from_param" not in kwargs.keys()  # Funkcja korzysta z tego parametru
         assert "to" not in kwargs.keys()          # Funkcja korzysta z tego parametru
 
@@ -172,6 +172,9 @@ class NewsApi:
 
             except KeyboardInterrupt:
                 print("\nMy watch has ended.")
+
+            except:
+                pass
 
     def get_past_month(self, csv_path, keyword, **kwargs):
         """
