@@ -141,35 +141,45 @@ class NewsApi:
         :param kwargs: pozostałe argumenty przekazywane do wrappera API
         """
         # Sprawdzenie, czy przy 1 stronie na interwał liczba odpytań się zepnie
-        assert interval / math.ceil(len(self.sources)/20) > 1440*60 / 1000
+        assert interval / math.ceil(len(self.sources)/20) > 1440*60 / 500
         assert "from_param" not in kwargs.keys()  # Funkcja korzysta z tego parametru
         assert "to" not in kwargs.keys()          # Funkcja korzysta z tego parametru
 
         from_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")  # Aktualny czas
+        
+        # Co obrót pobiera dane z przedziału (from_time, to_time), który ma długość równą wartości interwału
         try:
-            # Co obrót pobiera dane z przedziału (from_time, to_time), który ma długość ~interwału
             while True:
                 try:
                     for i in range(interval):
-                        print("\rWaiting... %02d" % (interval-i), end="")
+                        print("\rWaiting... %03d" % (interval-i), end="")
                         sleep(1)
 
                     print("\r%-13s" % "Working...", end="")
                     to_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
                     self.get_articles(keyword, from_param=from_time, to=to_time, **kwargs)
-                    self.save_to_csv(csv_path)
+                    if self.get_results(-1) != list():
+                        self.save_to_csv(csv_path)
                     self.clear_results()
 
                     from_time = to_time
 
-                except NewsAPIException as err:  # Błędy najpewniej spowodowane problemami z połączeniem
-                    print(err)
-                    
-                except RequestException:  # Jeśli zdarzy się jakiś błąd z siecią, to po prostu ponawiamy próbę w kolejnej iteracji
-                    continue
+    #            except NewsAPIException as err:  # Błędy najpewniej spowodowane problemami z połączeniem
+    #                print(err)
+    #                continue
 
+    #            except RequestException:  # Jeśli zdarzy się jakiś błąd z siecią, to po prostu ponawiamy próbę w kolejnej iteracji
+    #                continue
+
+                # Przy jakimkolwiek błędzie przechodzimy dalej, czyli odczekamy kolejną minutę i wtedy odpytamy Api
+                # Kolejne odpytanie po błędzie będzie z dłuższego okresu, ponieważ parametr `from_time` się nie zmieni -- tym samym nie ominiemy żadnego artykułu
+                except:
+                    pass
+            
         except KeyboardInterrupt:
             print("\nMy watch has ended.")
+            
+            
 
     def get_past_month(self, csv_path, keyword, **kwargs):
         """
