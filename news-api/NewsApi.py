@@ -141,7 +141,7 @@ class NewsApi:
         :param kwargs: pozostałe argumenty przekazywane do wrappera API
         """
         # Sprawdzenie, czy przy 1 stronie na interwał liczba odpytań się zepnie
-        assert interval / math.ceil(len(self.sources)/20) > 1440*60 / 500
+        assert interval >= 500 # Ustawienie do testów #assert interval / math.ceil(len(self.sources)/20) > 720*60 / 250
         assert "from_param" not in kwargs.keys()  # Funkcja korzysta z tego parametru
         assert "to" not in kwargs.keys()          # Funkcja korzysta z tego parametru
 
