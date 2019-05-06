@@ -11,17 +11,15 @@ import math
 
 
 class NewsApi:
-    def __init__(self, token=None, sources=tuple(SCRAPER_DICT.keys()), keep_blanks=True):
+    def __init__(self, token=None, sources=tuple(SCRAPER_DICT.keys())):
         """
         Konstruktor klasy NewsAPI. Tworzy nowy obiekt z polem za pomocą którego odpytujemy News API
         i listą źródeł, z których chcemy pozyskiwać artykuły.
         :param token: klucz uwierzytelniający
         :param sources: lista źródeł do wykorzystania (domyślnie: wszystkie obsługiwane)
-        :param keep_blanks: flaga, czy zapisywać tytuły i info artykułach bez treści do pliku (źle zescrapowane etc.)
         """
         assert isinstance(sources, tuple)
         assert len(sources) > 0
-        assert isinstance(keep_blanks, bool)
 
         # Jeśli nie podamy argumentu, to jest on odczytywany z pliku w którym powinien być sam klucz
         if token is None:
@@ -32,7 +30,6 @@ class NewsApi:
         self.api = NewsApiClient(api_key=token)
         self.articles_results = []
         self.sources = sources
-        self.keep_blanks = keep_blanks
 
     def clear_results(self):
         """
@@ -107,12 +104,13 @@ class NewsApi:
         self.articles_results.append(results)
         return self
 
-    def save_to_csv(self, csv_path, index=-1):
+    def save_to_csv(self, csv_path, index=-1, keep_blanks=True):
         """
         Funkcja zapisuje wyniki spod podanego indeksu do wskazanego pliku csv. Jeśli plik nie istnieje,
         to będzie stworzony i z początku zostanie zapisany nagłówek.
         :param csv_path: ścieżka wynikowej csv do której zapisujemy dane
         :param index: który wynik zapisać (domyślnie: ostatni wyszukiwany)
+        :param keep_blanks: flaga, czy zapisywać tytuły i info artykułach bez treści do pliku (źle zescrapowane etc.)
         """
         csv_exists = os.path.isfile(csv_path)
         with open(csv_path, "a", encoding="utf-8") as csv_file:
@@ -128,7 +126,7 @@ class NewsApi:
             # Pętla po zapisanych artykułach
             for article in self.get_results(index):
                 # Sprawdzenie, czy artykuł nie jest duplikatem i czy zapisywać, jeśli nie ma treści
-                if not article["url"] in urls and (self.keep_blanks or article["content"] != ""):
+                if not article["url"] in urls and (keep_blanks or article["content"] != ""):
                     urls.add(article["url"])    # Dodanie zapisanego adresu url do puli z którą weryfikujemy duplikaty
                     writer.writerow(article)    # Zapisanie artykułu
 
@@ -148,28 +146,24 @@ class NewsApi:
         from_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")  # Aktualny czas
         
         # Co obrót pobiera dane z przedziału (from_time, to_time), który ma długość równą wartości interwału
-        #try:
         while True:
             try:
+                # Wypisywanie na konsoli co obecnie się dzieje
                 for i in range(interval):
                     print("\rWaiting... %03d" % (interval-i), end="")
                     sleep(1)
-
                 print("\r%-13s" % "Working...", end="")
+                
+                # Zapisanie obecnego czasu
                 to_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                
+                # Pobranie i zapisanie danych 
                 self.get_articles(keyword, from_param=from_time, to=to_time, **kwargs)
-                if self.get_results(-1) != list():
-                    self.save_to_csv(csv_path)
+                self.save_to_csv(csv_path)
                 self.clear_results()
-
+                
+                # Zapamiętanie czasu początku poprzedniego interwału
                 from_time = to_time
-
-#            except NewsAPIException as err:  # Błędy najpewniej spowodowane problemami z połączeniem
-#                print(err)
-#                continue
-
-#            except RequestException:  # Jeśli zdarzy się jakiś błąd z siecią, to po prostu ponawiamy próbę w kolejnej iteracji
-#                continue
 
             except KeyboardInterrupt:
                 print("\nMy watch has ended.")
@@ -181,9 +175,6 @@ class NewsApi:
                 print(err)
                 pass
             
-            
-            
-
     def get_past_month(self, csv_path, keyword, **kwargs):
         """
         Funkcja zapisuje artykuły z ostatnich 28 dni do pliku csv.
