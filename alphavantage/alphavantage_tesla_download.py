@@ -7,8 +7,11 @@ while True:
         df_old = pd.read_csv("tesla_prices.csv", index_col=0, parse_dates=[0])
     except FileNotFoundError:
         df_old = pd.DataFrame()
-    df = pd.read_csv("https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=TSLA&interval=5min&apikey=8YZG2MXVNFPNRIWD&datatype=csv")
-    df.set_index("timestamp").iloc[[0]]
+    try:
+        df = pd.read_csv("https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=TSLA&interval=5min&apikey=8YZG2MXVNFPNRIWD&datatype=csv")
+        df.set_index("timestamp").iloc[[0]]
+    except KeyError:
+        continue
     df_old = df_old.append(df)
     df = df.loc[~df.index.duplicated()]
     df.to_csv("tesla_prices.csv")
