@@ -12,53 +12,75 @@ from alphavantage.utils import next_update_time
 
 # Other imports
 from datetime import datetime
+from pytz import timezone
 import pandas as pd
 import os
 
 
+CLOCK_STYLE = {
+    "display": "inline-block",
+    "width": "14%",
+    "fontSize": "16px",
+    "padding": "5px",
+    "textAlign": "center"
+}
+
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div([
-    html.H3("🔥 Gouda Praga 🔥"),
+    # Local time clock
+    html.Div([
+        html.Div("Local time"), html.Div(id="live-clock-local"),
+        html.Div("Next update at"), html.Div(id="live-next-update-local")
+    ], style=CLOCK_STYLE),
 
-    html.Div(id="live-clock"),        # Current time
-    html.Div(id="live-next-update"),  # Time when next update will happen
-        
+    # Gouda Praga
+    html.H3("🔥 Gouda Praga 🔥", style={"width": "69%", "display": "inline-block", "textAlign": "center"}),
+
+    # Stock market time clock
+    html.Div([
+        html.Div("Stock market time"), html.Div(id="live-clock-us"),
+        html.Div("Next update at"), html.Div(id="live-next-update-us")
+    ], style=CLOCK_STYLE),
+
     # Plot
     dcc.Graph(id="live-plot"),
         
-    # Defining intervals
-    dcc.Interval(
-        id='interval-clock', n_intervals=0,
-        interval=1000*1),  # in milliseconds
-
-    dcc.Interval(
-        id='interval-plot', n_intervals=0,
-        interval=1000*5)  # in milliseconds
+    # Defining intervals (in milliseconds)
+    dcc.Interval(id='interval-clock', n_intervals=0, interval=1000*1),
+    dcc.Interval(id='interval-plot', n_intervals=0, interval=1000*5)
 ])
 
 
-STYLE = {"padding": "5px", "fontSize": "16px"}
+# -----------------------------------------------------
+# -------------------- Local clock --------------------
+# -----------------------------------------------------
+@app.callback(Output("live-clock-local", "children"), [Input("interval-clock", "n_intervals")])
+def live_clock_local(n):
+    return html.Span(datetime.now().strftime("%H:%M:%S"))
 
 
-@app.callback(Output("live-clock", "children"), [Input("interval-clock", "n_intervals")])
-def live_clock(n):
-    """ Function to display current time. """
-    global STYLE
-    return html.Span(
-        "Current time: %s" % datetime.now().strftime("%H:%M:%S"),
-        style=STYLE)
+@app.callback(Output("live-next-update-local", "children"), [Input("interval-clock", "n_intervals")])
+def live_next_update_local(n):
+    return html.Span(next_update_time(offset=5, format_output=True))
 
 
-@app.callback(Output("live-next-update", "children"), [Input("interval-clock", "n_intervals")])
-def live_next_update(n):
-    """ Function displays time when next update will be displayed. """
-    global STYLE
-    return html.Span(
-        "Next update: %s (possible delay: 5 seconds)" % next_update_time(offset=5, format_output=True),
-        style=STYLE)
+# ------------------------------------------------------------
+# -------------------- Stock market clock --------------------
+# ------------------------------------------------------------
+@app.callback(Output("live-clock-us", "children"), [Input("interval-clock", "n_intervals")])
+def live_clock_est(n):
+    return html.Span(datetime.now(tz=timezone("US/Eastern")).strftime("%H:%M:%S"))
 
 
+@app.callback(Output("live-next-update-us", "children"), [Input("interval-clock", "n_intervals")])
+def live_next_update_us(n):
+    return html.Span(next_update_time(offset=5, format_output=True, us_timezone=True))
+
+
+# ----------------------------------------------
+# -------------------- Plot --------------------
+# ----------------------------------------------
 @app.callback(Output("live-plot", "figure"), [Input("interval-plot", "n_intervals")])
 def live_plot(n):
     """ Function displays live plot. """
