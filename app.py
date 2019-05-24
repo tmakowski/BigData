@@ -8,11 +8,9 @@ from dash.dependencies import Input, Output
 import plotly.graph_objs as go
 
 # Own modules imports
-from alphavantage.utils import next_update_time
+from alphavantage.utils import curr_time, next_update_time
 
 # Other imports
-from datetime import datetime
-from pytz import timezone
 import pandas as pd
 import os
 
@@ -57,12 +55,12 @@ app.layout = html.Div([
 # -----------------------------------------------------
 @app.callback(Output("live-clock-local", "children"), [Input("interval-clock", "n_intervals")])
 def live_clock_local(n):
-    return html.Span(datetime.now().strftime("%H:%M:%S"))
+    return html.Span(curr_time(output_format="%H:%M:%S"))
 
 
 @app.callback(Output("live-next-update-local", "children"), [Input("interval-clock", "n_intervals")])
 def live_next_update_local(n):
-    return html.Span(next_update_time(offset=5, format_output=True))
+    return html.Span(next_update_time(offset=5, output_format="%d.%m.%Y, %H:%M:%S"))
 
 
 # ------------------------------------------------------------
@@ -70,12 +68,12 @@ def live_next_update_local(n):
 # ------------------------------------------------------------
 @app.callback(Output("live-clock-us", "children"), [Input("interval-clock", "n_intervals")])
 def live_clock_est(n):
-    return html.Span(datetime.now(tz=timezone("US/Eastern")).strftime("%H:%M:%S"))
+    return html.Span(curr_time(output_format="%H:%M:%S", us_tz=True))
 
 
 @app.callback(Output("live-next-update-us", "children"), [Input("interval-clock", "n_intervals")])
 def live_next_update_us(n):
-    return html.Span(next_update_time(offset=5, format_output=True, us_timezone=True))
+    return html.Span(next_update_time(offset=5, output_format="%d.%m.%Y, %H:%M:%S", us_tz=True))
 
 
 # ----------------------------------------------
