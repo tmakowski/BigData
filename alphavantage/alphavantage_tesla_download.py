@@ -1,6 +1,7 @@
 import pandas as pd
 import requests
 import time
+from utils import seconds_until_update
 
 while True:
     try:
@@ -15,4 +16,9 @@ while True:
     df_old = df_old.append(df)
     df = df.loc[~df.index.duplicated()]
     df.to_csv("tesla_prices.csv")
-    time.sleep(5) #timesleep 5 minuts, data are in 5 min interval
+
+    # timesleep until 5 minuts, data are in 5 min interval
+    wait_time = seconds_until_update(offset=3)
+    for i in range(wait_time):
+        print("\rWaiting... %03d" % (wait_time-i), end="")
+        time.sleep(1)
