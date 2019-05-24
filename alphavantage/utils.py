@@ -20,7 +20,7 @@ def next_update_time(current_time=None, offset=0, format_output=False):
     return update_time.strftime("%H:%M:%S") if format_output else update_time
 
 
-def seconds_until_update(current_time=None, offset=0):
+def time_until_update(current_time=None, offset=0):
     """ Returns number of seconds until next update. """
     assert isinstance(current_time, datetime) or current_time is None
     assert isinstance(offset, int) and 0 <= offset < 60
@@ -30,4 +30,4 @@ def seconds_until_update(current_time=None, offset=0):
         current_time = datetime.now()
 
     # Return time in seconds until next update
-    return (next_update_time(current_time, offset) - current_time).seconds
+    return next_update_time(current_time, offset) - current_time
