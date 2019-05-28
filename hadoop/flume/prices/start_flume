@@ -1,0 +1,4 @@
+# Before starting flume run alphavanage_tesla_download.py
+# and make sure configuration file (flume.conf) is valid.
+/usr/bin/flume-ng agent --name agent -c conf -f flume.conf
+

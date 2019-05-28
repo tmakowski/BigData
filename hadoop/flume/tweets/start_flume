@@ -1,0 +1,4 @@
+# Before starting flume run get_tweets.py inside python_scraper directory with proper keyword 
+# and make sure configuration file (flume.conf) is valid.
+/usr/bin/flume-ng agent --name agent -c conf -f flume.conf
+
