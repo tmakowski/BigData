@@ -65,14 +65,15 @@ CLOCK_STYLE = {
     "padding": "5px",
     "textAlign": "center"
 }
-
-#Loading models
+ 
+# Loading models
 xgb = joblib.load("models/xgboost_price.h5")
 cv = joblib.load("models/count_vectorizer.h5")
 lasso = joblib.load("models/tweets_model.h5")
 tweets = pd.read_csv("data/tweets_example.csv", index_col=0, parse_dates=[0])
 preds = lasso.predict(cv.transform(tweets['text']))
 tweets['preds'] = preds
+
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -113,11 +114,6 @@ app.layout = html.Div([
     html.Div([html.Img(id = 'explain-plot', src = '')],
              id='plot_div'),
     generate_table(tweets)
-    # Defining intervals (in milliseconds)
-
-
-
-
 ])
 
 
@@ -170,8 +166,7 @@ def live_plot(n, mode):
         open=stock_data.loc[:, "open"],
         high=stock_data.loc[:, "high"],
         low=stock_data.loc[:, "low"],
-        close=stock_data.loc[:, "close"]
-    )
+        close=stock_data.loc[:, "close"])
 
     # Plot parameters
     plot_layout = go.Layout(
@@ -185,7 +180,6 @@ def live_plot(n, mode):
         layout=plot_layout)
 
     return plot_fig
-
 
 
 @app.callback(Output("data-div", "children"), [Input("interval-plot", "n_intervals")])
@@ -203,6 +197,7 @@ def model_predict(n):
     df['profit_model'] = np.where(df['preds'] > 0, df['profit'], -df['profit'])
     return df.to_json()
 
+
 @app.callback(Output(component_id='explain-plot', component_property='src'), [Input("data-div","children")])
 def explain_model(df):
     df = pd.read_json(df)
@@ -214,14 +209,14 @@ def explain_model(df):
     return out_url
 
 
-
 # ------------------------------------------------------
 # -------------------- Model output --------------------
 # ------------------------------------------------------
-@app.callback(Output("model-output", "children"), [Input("interval-plot", "n_intervals"), Input("plot-mode-dropdown", "value")])
-def model_output_display(n, model_prediction):
+@app.callback(Output("model-output", "children"), [Input("data-div", "children")])
+def model_output_display(n, df):
+    df = pd.read_json(df)
     return html.H3("🔥 Gouda Praga 🔥",
-                   style={"background-color": "green" if model_prediction else "red"})
+                   style={"background-color": "green" if df.loc[-1, "preds"] > 0 else "red"})
 
 
 if __name__ == "__main__":
