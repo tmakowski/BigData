@@ -80,7 +80,7 @@ app.layout = html.Div([
     # Defining intervals (in milliseconds)
     dcc.Interval(id='interval-clock', n_intervals=0, interval=1000*1),
     dcc.Interval(id='interval-plot', n_intervals=0, interval=1000*5),
-    
+
     # Local time clock
     html.Div([
         html.Div("Local time"), html.Div(id="live-clock-local"),
@@ -99,7 +99,7 @@ app.layout = html.Div([
     ], style=CLOCK_STYLE),
     html.Div(id="data-div", style={"display":"none"}),
     html.Div(id="explainer", style={"display":"none"}),
-    
+
     # Choose mode
     dcc.Dropdown(id="plot-mode-dropdown", options=[
         {"label": "Last 24h", "value": 1},
@@ -112,14 +112,12 @@ app.layout = html.Div([
     #dcc.Graph(id='profit-plot'),
     html.Div([html.Img(id = 'explain-plot', src = '')],
              id='plot_div'),
-    generate_table(tweets),
+    generate_table(tweets)
     # Defining intervals (in milliseconds)
-    dcc.Interval(id='interval-clock', n_intervals=0, interval=1000*1),
-    dcc.Interval(id='interval-plot', n_intervals=0, interval=1000*5)
 
-    
-    
-    
+
+
+
 ])
 
 
@@ -160,7 +158,7 @@ def live_plot(n, mode):
     stock_data_path = os.path.join("alphavantage", "tesla_prices.csv")
     assert os.path.isfile(stock_data_path)
     stock_data = pd.read_csv(stock_data_path)
-    
+
     # Last 24h
     if mode:
         stock_data["timestamp"] = pd.to_datetime(stock_data.loc[:, "timestamp"])
@@ -224,7 +222,7 @@ def explain_model(df):
 def model_output_display(n, model_prediction):
     return html.H3("🔥 Gouda Praga 🔥",
                    style={"background-color": "green" if model_prediction else "red"})
-                   
-    
+
+
 if __name__ == "__main__":
     app.run_server(debug=True)
