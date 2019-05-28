@@ -28,12 +28,23 @@ def next_update_time(current_time=None, offset=0, output_format=None, us_tz=Fals
     already_closed = 16 <= current_time_useastern.hour
     still_closed = (current_time_useastern - timedelta(hours=9, minutes=30)).day < current_time_useastern.day
 
-    if already_closed or still_closed:
+    if already_closed or still_closed or current_time_useastern.weekday() in [5, 6]:  # Check if it's weekend
+        if current_time_useastern.weekday() in [5, 6]:  # Saturday & sunday
+            days_offset = 7 - current_time_useastern.weekday()
+
+        elif already_closed and current_time_useastern.weekday() == 4:  # Already closed on friday
+            days_offset = 3
+
+        elif already_closed:  # Already closed in middle of the week
+            days_offset = 1
+
+        else:
+            days_offset = 0
 
         # Sets update time to local time corresponding to the 9:30 US Eastern time either the same day if the stock
-        # market is yet to open or next day if it's already closed
+        # market is yet to open or next working day if it's already closed. Note: does not include days off
         update_time = current_time + timedelta(
-            days=1 if already_closed else 0,
+            days=days_offset,
             hours=-current_time_useastern.hour + 9,
             minutes=-current_time.minute + 30,
             seconds=-current_time.second + offset,
