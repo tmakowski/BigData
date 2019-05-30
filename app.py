@@ -60,13 +60,17 @@ def generate_table(dataframe, max_rows=26):
 
 
 UPDATE_OFFSET = 5
-CLOCK_STYLE = {
+SIDE_PANELS_STYLE = {
     "display": "inline-block",
-    "width": "14%",
+    "width": "14vw",
     "fontSize": "16px",
     "padding": "5px",
-    "textAlign": "center"
-}
+    "textAlign": "center"}
+
+CENTER_PANEL_STYLE = {
+    "width": "69vw",
+    "display": "inline-block",
+    "textAlign": "center"}
 
 # Loading models
 xgb = joblib.load("models/xgboost_price.h5")
@@ -80,6 +84,10 @@ tweets['preds'] = preds
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div([
+    # Technical elements
+    html.Div([
+        html.Div(id="data-div"), html.Div(id="explainer"), html.Pre(id="selected-data")], style={"display": "none"}),
+
     # Defining intervals (in milliseconds)
     dcc.Interval(id='interval-clock', n_intervals=0, interval=1000*1),
     dcc.Interval(id='interval-plot', n_intervals=0, interval=1000*30),
@@ -88,33 +96,44 @@ app.layout = html.Div([
     html.Div([
         html.Div("Local time"), html.Div(id="live-clock-local"),
         html.Div("Next update at"), html.Div(id="live-next-update-local")
-    ], style=CLOCK_STYLE),
+    ], style=SIDE_PANELS_STYLE),
 
     # Gouda Praga
-    html.Div([
-        html.H3(id="model-output"),
-    ], style={"width": "69%", "display": "inline-block", "textAlign": "center"}),
+    # html.Div([
+    #     html.H3(id="model-output"),
+    # ], style=CENTER_PANEL_STYLE),
+    html.Div(id="model-output", style=CENTER_PANEL_STYLE),
 
     # Stock market time clock
     html.Div([
         html.Div("Stock market time"), html.Div(id="live-clock-us"),
         html.Div("Next update at"), html.Div(id="live-next-update-us")
-    ], style=CLOCK_STYLE),
-    html.Div(id="data-div", style={"display":"none"}),
-    html.Div(id="explainer", style={"display":"none"}),
+    ], style=SIDE_PANELS_STYLE),
 
+    # Body with plot
+    html.Div([
+        # Left panel
+        html.Div([
+            dcc.Dropdown(id="plot-mode-dropdown",
+                         options=[{"label": "Last 24h", "value": 1}, {"label": "Historic data", "value": 0}], value=1)
+        ] + [html.Br()]*15, style=SIDE_PANELS_STYLE),
+
+
+        html.Div([
+            dcc.Graph(id="live-plot"),  # Candlestick plot
+            html.Img(id='explain-plot', src='', style={"width": "69vw", "text-align": "center"})  # Explainer
+        ], style=CENTER_PANEL_STYLE),
+
+        # Right panel
+        html.Div([
+            html.Span("nic")
+        ] + [html.Br()]*15, style=SIDE_PANELS_STYLE)
+    ], style={"display": "inline-block"}),
     # Choose mode
-    dcc.Dropdown(id="plot-mode-dropdown", options=[
-        {"label": "Last 24h", "value": 1},
-        {"label": "Historic data", "value": 0}
-    ], value=1),
-    # Candlestick plot
-    dcc.Graph(id="live-plot"),
-    html.Pre(id="selected-data", style={"display":"none"}),
+
     # Profit plot
     #dcc.Graph(id='profit-plot'),
-    html.Div([html.Img(id = 'explain-plot', src = '')],
-             id='plot_div'),
+
     generate_table(tweets)
 ])
 
@@ -213,6 +232,7 @@ def explain_model(df, selected):
     explainer = shap.TreeExplainer(xgb)
     shap_values = explainer.shap_values(X)
     fig = shap.force_plot(explainer.expected_value, shap_values, X.round(2), matplotlib=True, show=False)
+    fig.tight_layout()
     out_url = fig_to_url(fig)
     return out_url
 
@@ -223,8 +243,8 @@ def explain_model(df, selected):
 @app.callback(Output("model-output", "children"), [Input("data-div", "children")])
 def model_output_display(df):
     df = pd.read_json(df)
-    return html.H3("🔥 Gouda Praga 🔥",
-                   style={"background-color": "green" if df.iloc[-1]["preds"] > 0 else "red"})
+    return html.Div([html.Br(), html.H3("🔥 Gouda Praga 🔥"), html.Br()],
+                    style={"background-color": "green" if df.iloc[-1]["preds"] > 0 else "red"})
 
 @app.callback(Output("selected-data", "children"), [Input("live-plot", "selectedData")])
 def model_output_display(k):
