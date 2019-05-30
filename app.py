@@ -16,6 +16,7 @@ import pandas as pd
 import numpy as np
 import os
 from ta import add_all_ta_features
+import json
 
 #models imports
 from xgboost import XGBRegressor
@@ -28,6 +29,7 @@ import matplotlib.pyplot as plt
 import shap
 from io import BytesIO
 import base64
+
 
 
 def fig_to_url(in_fig, close_all=True, **save_args):
@@ -65,7 +67,7 @@ CLOCK_STYLE = {
     "padding": "5px",
     "textAlign": "center"
 }
- 
+
 # Loading models
 xgb = joblib.load("models/xgboost_price.h5")
 cv = joblib.load("models/count_vectorizer.h5")
@@ -80,7 +82,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div([
     # Defining intervals (in milliseconds)
     dcc.Interval(id='interval-clock', n_intervals=0, interval=1000*1),
-    dcc.Interval(id='interval-plot', n_intervals=0, interval=1000*5),
+    dcc.Interval(id='interval-plot', n_intervals=0, interval=1000*30),
 
     # Local time clock
     html.Div([
@@ -108,7 +110,7 @@ app.layout = html.Div([
     ], value=1),
     # Candlestick plot
     dcc.Graph(id="live-plot"),
-
+    html.Pre(id="selected-data", style={"display":"none"}),
     # Profit plot
     #dcc.Graph(id='profit-plot'),
     html.Div([html.Img(id = 'explain-plot', src = '')],
@@ -172,6 +174,7 @@ def live_plot(n, mode):
     plot_layout = go.Layout(
         title="Stock prices",
         yaxis={"title": "Price (USD)"},
+        clickmode="event+select",
         uirevision=mode)
 
     # Defining plotly figure
@@ -198,26 +201,34 @@ def model_predict(n):
     return df.to_json()
 
 
-@app.callback(Output(component_id='explain-plot', component_property='src'), [Input("data-div","children")])
-def explain_model(df):
+@app.callback(Output(component_id='explain-plot', component_property='src'), [Input("data-div","children"), Input("selected-data", "children")])
+def explain_model(df, selected):
     df = pd.read_json(df)
-    X = df[xgb.get_booster().feature_names].round(2)
+    if selected != "null":
+        selected = json.loads(selected)['points'][0]
+        idx = selected['x']
+    else:
+        idx = df.index.values[-1]
+    X = df[xgb.get_booster().feature_names].round(2).loc[idx]
     explainer = shap.TreeExplainer(xgb)
     shap_values = explainer.shap_values(X)
-    fig = shap.force_plot(explainer.expected_value, shap_values[-1,:], X.iloc[-1,:].round(2), matplotlib=True, show=False)
+    fig = shap.force_plot(explainer.expected_value, shap_values, X.round(2), matplotlib=True, show=False)
     out_url = fig_to_url(fig)
     return out_url
-
 
 # ------------------------------------------------------
 # -------------------- Model output --------------------
 # ------------------------------------------------------
+
 @app.callback(Output("model-output", "children"), [Input("data-div", "children")])
-def model_output_display(n, df):
+def model_output_display(df):
     df = pd.read_json(df)
     return html.H3("🔥 Gouda Praga 🔥",
-                   style={"background-color": "green" if df.loc[-1, "preds"] > 0 else "red"})
+                   style={"background-color": "green" if df.iloc[-1]["preds"] > 0 else "red"})
 
+@app.callback(Output("selected-data", "children"), [Input("live-plot", "selectedData")])
+def model_output_display(k):
+    return json.dumps(k, indent=2)
 
 if __name__ == "__main__":
     app.run_server(debug=True)
