@@ -30,7 +30,8 @@ import matplotlib
 import shap
 from io import BytesIO
 import base64
-
+import glob
+import os
 
 
 def fig_to_url(in_fig, close_all=True, **save_args):
@@ -140,8 +141,6 @@ app.layout = html.Div([
 
     # Profit plot
     #dcc.Graph(id='profit-plot'),
-    html.Div([html.Img(id = 'explain-plot', src = '')],
-             id='plot_div'),
     html.Div(id="tweets-div")
 ])
 
@@ -150,10 +149,10 @@ app.layout = html.Div([
 #TWEETS taking and predicting
 @app.callback(Output("tweets-div", "children"), [Input("interval-clock", "n_intervals")])
 def update_tweets(n):
-    tweets = pd.read_csv("data/tweets_example.csv", sep=",")
+    list_of_files = glob.glob('/user/spark/test_online_evaluation/*.csv') # * means all if need specific format then *.csv
+    latest_file = max(list_of_files, key=os.path.getctime)
+    tweets = pd.read_csv(latest_file, sep=",")
     tweets = tweets.dropna()
-    preds = lasso.predict(cv.transform(tweets['text;']))
-    tweets['preds'] = preds
     return generate_table(tweets)
 
 # -----------------------------------------------------
