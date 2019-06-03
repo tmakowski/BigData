@@ -55,7 +55,11 @@ def generate_table(dataframe, max_rows=26):
         # Body
         [html.Tr([
             html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
-        ]) for i in range(min(len(dataframe), max_rows))]
+        ], style={'background':"#982000"}) if dataframe.iloc[i]['preds'] < 0  else
+        html.Tr([
+            html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
+        ], style={'background':"#90EE90"})
+         for i in range(min(len(dataframe), max_rows))]
     )
 
 
