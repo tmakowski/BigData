@@ -26,6 +26,7 @@ from sklearn.linear_model import Lasso
 
 #Explainers import
 import matplotlib.pyplot as plt
+import matplotlib
 import shap
 from io import BytesIO
 import base64
@@ -59,6 +60,8 @@ def generate_table(dataframe, max_rows=26):
     )
 
 
+TEXT_COLOR = "#ffffff"
+BACKGROUND_COLOR = "#37474f"
 UPDATE_OFFSET = 5
 SIDE_PANELS_STYLE = {
     "display": "inline-block",
@@ -72,6 +75,9 @@ CENTER_PANEL_STYLE = {
     "display": "inline-block",
     "textAlign": "center"}
 
+PAGE_STYLE = {
+    "background-color": "#37474f", "width": "100%", "height": "100%", 'margin': 0}
+
 # Loading models
 xgb = joblib.load("models/xgboost_price.h5")
 cv = joblib.load("models/count_vectorizer.h5")
@@ -81,8 +87,7 @@ preds = lasso.predict(cv.transform(tweets['text']))
 tweets['preds'] = preds
 
 
-external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, assets_folder="app_assets")
 app.layout = html.Div([
     # Technical elements
     html.Div([
@@ -121,6 +126,7 @@ app.layout = html.Div([
 
         html.Div([
             dcc.Graph(id="live-plot"),  # Candlestick plot
+            html.Br(),html.Br(),html.Br(),
             html.Img(id='explain-plot', src='', style={"width": "69vw", "text-align": "center"})  # Explainer
         ], style=CENTER_PANEL_STYLE),
 
@@ -135,7 +141,7 @@ app.layout = html.Div([
     #dcc.Graph(id='profit-plot'),
 
     generate_table(tweets)
-])
+])#, style=PAGE_STYLE)
 
 
 # -----------------------------------------------------
@@ -231,9 +237,21 @@ def explain_model(df, selected):
     X = df[xgb.get_booster().feature_names].round(2).loc[idx]
     explainer = shap.TreeExplainer(xgb)
     shap_values = explainer.shap_values(X)
+    # matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    matplotlib.rcParams.update({
+        # Axis coloring
+        "xtick.color": TEXT_COLOR, "axes.edgecolor": TEXT_COLOR,
+
+        # Axis size
+        "xtick.major.size": 10, "xtick.labelsize": 15,
+
+        'text.color': "black",
+        #"axes.labelcolor": TEXT_COLOR,
+        "axes.facecolor": BACKGROUND_COLOR
+    })
     fig = shap.force_plot(explainer.expected_value, shap_values, X.round(2), matplotlib=True, show=False)
     fig.tight_layout()
-    out_url = fig_to_url(fig)
+    out_url = fig_to_url(fig, facecolor=BACKGROUND_COLOR)
     return out_url
 
 # ------------------------------------------------------
