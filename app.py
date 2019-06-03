@@ -72,11 +72,6 @@ CLOCK_STYLE = {
 xgb = joblib.load("models/xgboost_price.h5")
 cv = joblib.load("models/count_vectorizer.h5")
 lasso = joblib.load("models/tweets_model.h5")
-tweets = pd.read_csv("data/tweets_example.csv", index_col=0, parse_dates=[0])
-preds = lasso.predict(cv.transform(tweets['text']))
-tweets['preds'] = preds
-
-
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div([
@@ -115,9 +110,18 @@ app.layout = html.Div([
     #dcc.Graph(id='profit-plot'),
     html.Div([html.Img(id = 'explain-plot', src = '')],
              id='plot_div'),
-    generate_table(tweets)
+    html.Div(id="tweets-div")
 ])
 
+
+#TWEETS taking and predicting
+@app.callback(Output("tweets-div", "children"), [Input("interval-clock", "n_intervals")])
+def update_tweets(n):
+    tweets = pd.read_csv("data/tweets_example.csv", sep=",")
+    tweets = tweets.dropna()
+    preds = lasso.predict(cv.transform(tweets['text;']))
+    tweets['preds'] = preds
+    return generate_table(tweets)
 
 # -----------------------------------------------------
 # -------------------- Local clock --------------------
