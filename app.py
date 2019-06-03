@@ -151,7 +151,7 @@ app.layout = html.Div([
 def update_tweets(n):
     list_of_files = glob.glob('/user/spark/test_online_evaluation/*.csv') # * means all if need specific format then *.csv
     latest_file = max(list_of_files, key=os.path.getctime)
-    tweets = pd.read_csv(latest_file, sep=",")
+    tweets = pd.read_csv(latest_file, sep=",", header=None, names=["id","text","preds"])
     tweets = tweets.dropna()
     return generate_table(tweets)
 
