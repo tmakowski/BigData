@@ -189,9 +189,8 @@ def live_plot(n, mode):
     """ Function displays live plot. """
 
     # Loading stock data
-    stock_data_path = os.path.join("alphavantage", "tesla_prices.csv")
-    assert os.path.isfile(stock_data_path)
-    stock_data = pd.read_csv(stock_data_path)
+
+    stock_data = pd.read_csv("https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=TSLA&interval=5min&apikey=8YZG2MXVNFPNRIWD&datatype=csv")
 
     # Last 24h
     if mode:
@@ -223,11 +222,9 @@ def live_plot(n, mode):
 
 @app.callback(Output("data-div", "children"), [Input("interval-plot", "n_intervals")])
 def model_predict(n):
-    stock_data_path = os.path.join("alphavantage", "tesla_prices.csv")
-    assert os.path.isfile(stock_data_path)
-    stock_data = pd.read_csv(stock_data_path, index_col=0)
-    stock_data = stock_data.set_index("timestamp").sort_index()
-    df = add_all_ta_features(stock_data, "open", 'high','low', 'close', 'volume')
+    df = pd.read_csv("https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=TSLA&interval=5min&apikey=8YZG2MXVNFPNRIWD&datatype=csv")
+    df.set_index("timestamp").sort_index()
+    df = add_all_ta_features(df, "open", 'high','low', 'close', 'volume')
     df['lower_shadow'] = np.minimum(df['open'], df['close']) - df['low']
     df['higher_shadow'] = df['high'] - np.maximum(df['open'], df['close'])
     df['profit'] = (df['close'] - df['open']).shift(-1)
