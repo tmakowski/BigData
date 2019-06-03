@@ -56,7 +56,11 @@ def generate_table(dataframe, max_rows=26):
         # Body
         [html.Tr([
             html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
-        ]) for i in range(min(len(dataframe), max_rows))]
+        ], style={'background':"#982000"}) if dataframe.iloc[i]['preds'] < 0  else
+        html.Tr([
+            html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
+        ], style={'background':"#90EE90"})
+         for i in range(min(len(dataframe), max_rows))]
     )
 
 
@@ -82,12 +86,9 @@ PAGE_STYLE = {
 xgb = joblib.load("models/xgboost_price.h5")
 cv = joblib.load("models/count_vectorizer.h5")
 lasso = joblib.load("models/tweets_model.h5")
-tweets = pd.read_csv("data/tweets_example.csv", index_col=0, parse_dates=[0])
-preds = lasso.predict(cv.transform(tweets['text']))
-tweets['preds'] = preds
 
-
-app = dash.Dash(__name__, assets_folder="app_assets")
+external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div([
     # Technical elements
     html.Div([
@@ -139,10 +140,21 @@ app.layout = html.Div([
 
     # Profit plot
     #dcc.Graph(id='profit-plot'),
+    html.Div([html.Img(id = 'explain-plot', src = '')],
+             id='plot_div'),
+    html.Div(id="tweets-div")
+])
 
-    generate_table(tweets)
-])#, style=PAGE_STYLE)
 
+
+#TWEETS taking and predicting
+@app.callback(Output("tweets-div", "children"), [Input("interval-clock", "n_intervals")])
+def update_tweets(n):
+    tweets = pd.read_csv("data/tweets_example.csv", sep=",")
+    tweets = tweets.dropna()
+    preds = lasso.predict(cv.transform(tweets['text;']))
+    tweets['preds'] = preds
+    return generate_table(tweets)
 
 # -----------------------------------------------------
 # -------------------- Local clock --------------------
