@@ -11,7 +11,7 @@ import plotly.graph_objs as go
 from alphavantage.utils import curr_time, next_update_time
 
 # Other imports
-from datetime import timedelta
+from datetime import timedelta, datetime
 import pandas as pd
 import numpy as np
 import os
@@ -59,24 +59,47 @@ def generate_table(dataframe, max_rows=26):
         ]) for i in range(min(len(dataframe), max_rows))]
     )
 
+def format_tweet(df, positive_flag):
+    if positive_flag:
+        main_color = "#1E88E5"
+    else:
+        main_color = "#FF0D57"
+
+    div_list = []
+    for body_text, pred in zip(df["text"], df["preds"]):
+        # Tweet body
+        div_list.append(html.Blockquote(html.P(body_text), className="twitter-tweet",
+                                        style={"border-color": main_color, "text-align": "left"}))
+        # Pred
+        div_list.append(html.Div("%.3f" % pred,
+                                 style={"color": main_color, "text-align": "right",
+                                        "margin-bottom": "0.3em", "margin-right": "0.75em"}, className="score"))
+
+    return html.Div(div_list)
+
 
 TEXT_COLOR = "#ffffff"
 BACKGROUND_COLOR = "#37474f"
 UPDATE_OFFSET = 5
 SIDE_PANELS_STYLE = {
     "display": "inline-block",
-    "width": "14vw",
+    "width": "16vw",
     "fontSize": "16px",
     "padding": "5px",
-    "textAlign": "center"}
+    "text-align": "center",
+    "vertical-align": "top"}
 
+CENTER_PANEL_WIDTH = "66vw"
 CENTER_PANEL_STYLE = {
-    "width": "69vw",
+    "width": CENTER_PANEL_WIDTH,
     "display": "inline-block",
-    "textAlign": "center"}
+    "text-align": "center",
+    "padding-left": "5px",
+    "padding-right": "5px"}
 
 PAGE_STYLE = {
     "background-color": "#37474f", "width": "100%", "height": "100%", 'margin': 0}
+BORDER_STYLE = {"border-style": "solid", "border-width": "1px", "border-color": "white"}
 
 # Loading models
 xgb = joblib.load("models/xgboost_price.h5")
@@ -87,7 +110,7 @@ preds = lasso.predict(cv.transform(tweets['text']))
 tweets['preds'] = preds
 
 
-app = dash.Dash(__name__, assets_folder="app_assets")
+app = dash.Dash(__name__, assets_folder="app_files/app_css")
 app.layout = html.Div([
     # Technical elements
     html.Div([
@@ -99,49 +122,67 @@ app.layout = html.Div([
 
     # Local time clock
     html.Div([
-        html.Div("Local time"), html.Div(id="live-clock-local"),
-        html.Div("Next update at"), html.Div(id="live-next-update-local")
-    ], style=SIDE_PANELS_STYLE),
+        html.Div([
+            html.Div("Local time"), html.Div(id="live-clock-local"),
+            html.Div("Next update at"), html.Div(id="live-next-update-local", className="update")
+        ], style={**SIDE_PANELS_STYLE, **BORDER_STYLE}),
 
-    # Gouda Praga
-    # html.Div([
-    #     html.H3(id="model-output"),
-    # ], style=CENTER_PANEL_STYLE),
-    html.Div(id="model-output", style=CENTER_PANEL_STYLE),
+        # Gouda Praga
+        # html.Div([
+        #     html.H3(id="model-output"),
+        # ], style=CENTER_PANEL_STYLE),
+        html.Div(id="model-output", style=CENTER_PANEL_STYLE),
 
-    # Stock market time clock
-    html.Div([
-        html.Div("Stock market time"), html.Div(id="live-clock-us"),
-        html.Div("Next update at"), html.Div(id="live-next-update-us")
-    ], style=SIDE_PANELS_STYLE),
+        # Stock market time clock
+        html.Div([
+            html.Div("Stock market time"), html.Div(id="live-clock-us"),
+            html.Div("Next update at"), html.Div(id="live-next-update-us", className="update")
+        ], style={**SIDE_PANELS_STYLE, **BORDER_STYLE})]),
 
     # Body with plot
     html.Div([
         # Left panel
         html.Div([
-            dcc.Dropdown(id="plot-mode-dropdown",
-                         options=[{"label": "Last 24h", "value": 1}, {"label": "Historic data", "value": 0}], value=1)
-        ] + [html.Br()]*15, style=SIDE_PANELS_STYLE),
+            html.H4("Latest negative scores", style={"color": "#FF0D57"}),
+            html.Div(id="tweets-negative")
+        ], style=SIDE_PANELS_STYLE),
 
 
         html.Div([
+            dcc.Dropdown(id="plot-mode-dropdown", value=1, style={"color": "black", "margin-top": "0.5em", "margin-bottom": "0.5em"},
+                         options=[
+                             {"label": "Last 24h", "value": 1},
+                             {"label": "Historic data", "value": 0}]),
             dcc.Graph(id="live-plot"),  # Candlestick plot
-            html.Br(),html.Br(),html.Br(),
-            html.Img(id='explain-plot', src='', style={"width": "69vw", "text-align": "center"})  # Explainer
+            html.Div(id="explain-desc"),
+            html.Img(id='explain-plot', src='', style={"width": CENTER_PANEL_WIDTH, "text-align": "center"})  # Explainer
         ], style=CENTER_PANEL_STYLE),
 
         # Right panel
         html.Div([
-            html.Span("nic")
-        ] + [html.Br()]*15, style=SIDE_PANELS_STYLE)
+            html.H4("Latest positive scores", style={"color": "#1E88E5"}),
+            html.Div(id="tweets-positive")
+        ], style=SIDE_PANELS_STYLE)
     ], style={"display": "inline-block"}),
-    # Choose mode
 
-    # Profit plot
-    #dcc.Graph(id='profit-plot'),
+    # generate_table(tweets)
+])
 
-    generate_table(tweets)
-])#, style=PAGE_STYLE)
+# --------------------------------------------------------
+# -------------------- Tweets scoring --------------------
+# --------------------------------------------------------
+@app.callback(Output("tweets-negative", "children"), [Input("interval-clock", "n_intervals")])
+def tweets_negative(n):
+    top5_negative = tweets[tweets.preds < 0].iloc[:5, :]
+
+    return format_tweet(top5_negative, positive_flag=False)
+
+
+@app.callback(Output("tweets-positive", "children"), [Input("interval-clock", "n_intervals")])
+def tweets_positive(n):
+    top5_positive = tweets[tweets.preds > 0].iloc[:5, :]
+
+    return format_tweet(top5_positive, positive_flag=True)
 
 
 # -----------------------------------------------------
@@ -197,7 +238,7 @@ def live_plot(n, mode):
 
     # Plot parameters
     plot_layout = go.Layout(
-        title="Stock prices",
+        title="<b>Stock prices</b>",
         yaxis={"title": "Price (USD)"},
         clickmode="event+select",
         uirevision=mode)
@@ -226,7 +267,7 @@ def model_predict(n):
     return df.to_json()
 
 
-@app.callback(Output(component_id='explain-plot', component_property='src'), [Input("data-div","children"), Input("selected-data", "children")])
+@app.callback([Output(component_id='explain-plot', component_property='src'), Output("explain-desc", "children")], [Input("data-div","children"), Input("selected-data", "children")])
 def explain_model(df, selected):
     df = pd.read_json(df)
     if selected != "null":
@@ -234,25 +275,33 @@ def explain_model(df, selected):
         idx = selected['x']
     else:
         idx = df.index.values[-1]
+
     X = df[xgb.get_booster().feature_names].round(2).loc[idx]
     explainer = shap.TreeExplainer(xgb)
     shap_values = explainer.shap_values(X)
     # matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     matplotlib.rcParams.update({
         # Axis coloring
-        "xtick.color": TEXT_COLOR, "axes.edgecolor": TEXT_COLOR,
+        "xtick.color": 'white', "axes.edgecolor": 'white',
 
         # Axis size
         "xtick.major.size": 10, "xtick.labelsize": 15,
 
         'text.color': "black",
         #"axes.labelcolor": TEXT_COLOR,
-        "axes.facecolor": BACKGROUND_COLOR
+        "axes.facecolor": BACKGROUND_COLOR  # Background fill o
     })
     fig = shap.force_plot(explainer.expected_value, shap_values, X.round(2), matplotlib=True, show=False)
     fig.tight_layout()
     out_url = fig_to_url(fig, facecolor=BACKGROUND_COLOR)
-    return out_url
+
+    # Date
+    explain_date = idx if isinstance(idx, str) else pd.to_datetime(idx).strftime("%Y-%m-%d %H:%M")
+
+    return out_url, html.H4("Model breakdown for %s" % explain_date,
+                            style={
+                                "color": "#1E88E5" if df.loc[idx]["preds"] > 0 else "#FF0D57",
+                                "padding": 5, "font-weight": "bold"})
 
 # ------------------------------------------------------
 # -------------------- Model output --------------------
@@ -269,4 +318,5 @@ def model_output_display(k):
     return json.dumps(k, indent=2)
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    # app.run_server(debug=True)
+    app.run_server()
