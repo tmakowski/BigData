@@ -11,26 +11,27 @@ import plotly.graph_objs as go
 from alphavantage.utils import curr_time, next_update_time
 
 # Other imports
-from datetime import timedelta, datetime
+from datetime import timedelta
 import pandas as pd
 import numpy as np
 import os
 from ta import add_all_ta_features
 import json
 
-#models imports
+# models imports
 from xgboost import XGBRegressor
 from sklearn.externals import joblib
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import Lasso
 
-#Explainers import
+# Explainers import
 import matplotlib.pyplot as plt
 import matplotlib
 import shap
 from io import BytesIO
 import base64
-
+import glob
+import os
 
 
 def fig_to_url(in_fig, close_all=True, **save_args):
@@ -49,15 +50,21 @@ def fig_to_url(in_fig, close_all=True, **save_args):
     encoded = base64.b64encode(out_img.read()).decode("ascii").replace("\n", "")
     return "data:image/png;base64,{}".format(encoded)
 
+
 def generate_table(dataframe, max_rows=26):
     return html.Table(
         # Header
-        [html.Tr([html.Th(col) for col in dataframe.columns]) ] +
+        [html.Tr([html.Th(col) for col in dataframe.columns])] +
         # Body
         [html.Tr([
             html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
-        ]) for i in range(min(len(dataframe), max_rows))]
+        ], style={'background': "#982000"}) if dataframe.iloc[i]['preds'] < 0 else
+         html.Tr([
+             html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
+         ], style={'background': "#90EE90"})
+         for i in range(min(len(dataframe), max_rows))]
     )
+
 
 def format_tweet(df, positive_flag):
     if positive_flag:
@@ -105,20 +112,18 @@ BORDER_STYLE = {"border-style": "solid", "border-width": "1px", "border-color": 
 xgb = joblib.load("models/xgboost_price.h5")
 cv = joblib.load("models/count_vectorizer.h5")
 lasso = joblib.load("models/tweets_model.h5")
-tweets = pd.read_csv("data/tweets_example.csv", index_col=0, parse_dates=[0])
-preds = lasso.predict(cv.transform(tweets['text']))
-tweets['preds'] = preds
-
 
 app = dash.Dash(__name__, assets_folder="app_files/app_css")
 app.layout = html.Div([
     # Technical elements
     html.Div([
-        html.Div(id="data-div"), html.Div(id="explainer"), html.Pre(id="selected-data")], style={"display": "none"}),
+        html.Div(id="data-div"), html.Div(id="explainer"), html.Pre(id="selected-data"),
+        html.Div(id="tweets-div")], style={"display": "none"}),
 
     # Defining intervals (in milliseconds)
-    dcc.Interval(id='interval-clock', n_intervals=0, interval=1000*1),
-    dcc.Interval(id='interval-plot', n_intervals=0, interval=1000*30),
+    dcc.Interval(id='interval-clock', n_intervals=0, interval=1000 * 1),
+    dcc.Interval(id='interval-plot', n_intervals=0, interval=1000 * 5),
+    dcc.Interval(id='interval-alpha', n_intervals=0, interval=1000 * 300),
 
     # Local time clock
     html.Div([
@@ -128,9 +133,6 @@ app.layout = html.Div([
         ], style={**SIDE_PANELS_STYLE, **BORDER_STYLE}),
 
         # Gouda Praga
-        # html.Div([
-        #     html.H3(id="model-output"),
-        # ], style=CENTER_PANEL_STYLE),
         html.Div(id="model-output", style=CENTER_PANEL_STYLE),
 
         # Stock market time clock
@@ -147,15 +149,15 @@ app.layout = html.Div([
             html.Div(id="tweets-negative")
         ], style=SIDE_PANELS_STYLE),
 
-
         html.Div([
-            dcc.Dropdown(id="plot-mode-dropdown", value=1, style={"color": "black", "margin-top": "0.5em", "margin-bottom": "0.5em"},
-                         options=[
-                             {"label": "Last 24h", "value": 1},
-                             {"label": "Historic data", "value": 0}]),
-            dcc.Graph(id="live-plot"),  # Candlestick plot
+            # dcc.Dropdown(id="plot-mode-dropdown", value=1, style={"color": "black", "margin-top": "0.5em", "margin-bottom": "0.5em"},
+            #              options=[
+            #                  {"label": "Last 24h", "value": 1},
+            #                  {"label": "Historic data", "value": 0}]),
+            dcc.Graph(id="live-plot", style={"margin-top": "0.5em"}),  # Candlestick plot
             html.Div(id="explain-desc"),
-            html.Img(id='explain-plot', src='', style={"width": CENTER_PANEL_WIDTH, "text-align": "center"})  # Explainer
+            html.Img(id='explain-plot', src='', style={"width": CENTER_PANEL_WIDTH, "text-align": "center"})
+            # Explainer
         ], style=CENTER_PANEL_STYLE),
 
         # Right panel
@@ -165,21 +167,36 @@ app.layout = html.Div([
         ], style=SIDE_PANELS_STYLE)
     ], style={"display": "inline-block"}),
 
-    # generate_table(tweets)
 ])
 
-# --------------------------------------------------------
-# -------------------- Tweets scoring --------------------
-# --------------------------------------------------------
-@app.callback(Output("tweets-negative", "children"), [Input("interval-clock", "n_intervals")])
-def tweets_negative(n):
+
+# TWEETS taking and predicting
+@app.callback(Output("tweets-div", "children"), [Input("interval-clock", "n_intervals")])
+def update_tweets(n):
+    # list_of_files = glob.glob('/user/spark/test_online_evaluation/*.csv') # * means all if need specific format then *.csv
+    # latest_file = max(list_of_files, key=os.path.getctime)
+    # tweets = pd.read_csv(latest_file, sep=",", header=None, names=["id","text","preds"])
+    # tweets = tweets.dropna()
+
+    list_of_files = glob.glob('data/*_example.csv')
+    latest_file = max(list_of_files, key=os.path.getctime)
+    tweets = pd.read_csv(latest_file, index_col=0, parse_dates=[0])
+    tweets["preds"] = lasso.predict(cv.transform(tweets['text']))
+    tweets = tweets.reset_index()
+    return tweets.to_json()
+
+
+@app.callback(Output("tweets-negative", "children"), [Input("tweets-div", "children")])
+def tweets_negative(df):
+    tweets = pd.read_json(df)
     top5_negative = tweets[tweets.preds < 0].iloc[:5, :]
 
     return format_tweet(top5_negative, positive_flag=False)
 
 
-@app.callback(Output("tweets-positive", "children"), [Input("interval-clock", "n_intervals")])
-def tweets_positive(n):
+@app.callback(Output("tweets-positive", "children"), [Input("tweets-div", "children")])
+def tweets_positive(df):
+    tweets = pd.read_json(df)
     top5_positive = tweets[tweets.preds > 0].iloc[:5, :]
 
     return format_tweet(top5_positive, positive_flag=True)
@@ -214,19 +231,18 @@ def live_next_update_us(n):
 # ----------------------------------------------
 # -------------------- Plot --------------------
 # ----------------------------------------------
-@app.callback(Output("live-plot", "figure"), [Input("interval-plot", "n_intervals"), Input("plot-mode-dropdown", "value")])
-def live_plot(n, mode):
+@app.callback(Output("live-plot", "figure"), [Input("interval-plot", "n_intervals")])
+def live_plot(n):
     """ Function displays live plot. """
 
     # Loading stock data
-    stock_data_path = os.path.join("alphavantage", "tesla_prices.csv")
-    assert os.path.isfile(stock_data_path)
-    stock_data = pd.read_csv(stock_data_path)
+
+    stock_data = pd.read_csv(
+        "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=TSLA&interval=5min&apikey=8YZG2MXVNFPNRIWD&datatype=csv")
 
     # Last 24h
-    if mode:
-        stock_data["timestamp"] = pd.to_datetime(stock_data.loc[:, "timestamp"])
-        stock_data = stock_data[stock_data.timestamp >= curr_time(us_tz=True).replace(tzinfo=None) - timedelta(hours=24)]
+    stock_data["timestamp"] = pd.to_datetime(stock_data.loc[:, "timestamp"])
+    stock_data = stock_data[stock_data.timestamp >= curr_time(us_tz=True).replace(tzinfo=None) - timedelta(hours=24)]
 
     # Defining the stock candle plot trace
     trace_candle = go.Candlestick(
@@ -241,7 +257,7 @@ def live_plot(n, mode):
         title="<b>Stock prices</b>",
         yaxis={"title": "Price (USD)"},
         clickmode="event+select",
-        uirevision=mode)
+        uirevision=False)
 
     # Defining plotly figure
     plot_fig = go.Figure(
@@ -253,21 +269,21 @@ def live_plot(n, mode):
 
 @app.callback(Output("data-div", "children"), [Input("interval-plot", "n_intervals")])
 def model_predict(n):
-    stock_data_path = os.path.join("alphavantage", "tesla_prices.csv")
-    assert os.path.isfile(stock_data_path)
-    stock_data = pd.read_csv(stock_data_path, index_col=0)
-    stock_data = stock_data.set_index("timestamp").sort_index()
-    df = add_all_ta_features(stock_data, "open", 'high','low', 'close', 'volume')
+    df = pd.read_csv(
+        "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=TSLA&interval=5min&apikey=8YZG2MXVNFPNRIWD&datatype=csv")
+    df = df.set_index("timestamp").sort_index()
+    df = add_all_ta_features(df, "open", 'high', 'low', 'close', 'volume')
     df['lower_shadow'] = np.minimum(df['open'], df['close']) - df['low']
     df['higher_shadow'] = df['high'] - np.maximum(df['open'], df['close'])
     df['profit'] = (df['close'] - df['open']).shift(-1)
-    X = df.drop(['profit', 'others_dlr','others_dr', 'others_cr'],axis=1)
+    X = df.drop(['profit', 'others_dlr', 'others_dr', 'others_cr'], axis=1)
     df['preds'] = xgb.predict(X[xgb.get_booster().feature_names])
     df['profit_model'] = np.where(df['preds'] > 0, df['profit'], -df['profit'])
     return df.to_json()
 
 
-@app.callback([Output(component_id='explain-plot', component_property='src'), Output("explain-desc", "children")], [Input("data-div","children"), Input("selected-data", "children")])
+@app.callback([Output(component_id='explain-plot', component_property='src'), Output("explain-desc", "children")],
+              [Input("data-div", "children"), Input("selected-data", "children")])
 def explain_model(df, selected):
     df = pd.read_json(df)
     if selected != "null":
@@ -275,33 +291,31 @@ def explain_model(df, selected):
         idx = selected['x']
     else:
         idx = df.index.values[-1]
-
     X = df[xgb.get_booster().feature_names].round(2).loc[idx]
     explainer = shap.TreeExplainer(xgb)
     shap_values = explainer.shap_values(X)
     # matplotlib.rcParams.update(matplotlib.rcParamsDefault)
     matplotlib.rcParams.update({
         # Axis coloring
-        "xtick.color": 'white', "axes.edgecolor": 'white',
+        "xtick.color": TEXT_COLOR, "axes.edgecolor": TEXT_COLOR,
 
         # Axis size
         "xtick.major.size": 10, "xtick.labelsize": 15,
 
         'text.color': "black",
-        #"axes.labelcolor": TEXT_COLOR,
-        "axes.facecolor": BACKGROUND_COLOR  # Background fill o
+        # "axes.labelcolor": TEXT_COLOR,
+        "axes.facecolor": BACKGROUND_COLOR
     })
     fig = shap.force_plot(explainer.expected_value, shap_values, X.round(2), matplotlib=True, show=False)
     fig.tight_layout()
     out_url = fig_to_url(fig, facecolor=BACKGROUND_COLOR)
 
-    # Date
     explain_date = idx if isinstance(idx, str) else pd.to_datetime(idx).strftime("%Y-%m-%d %H:%M")
-
     return out_url, html.H4("Model breakdown for %s" % explain_date,
                             style={
                                 "color": "#1E88E5" if df.loc[idx]["preds"] > 0 else "#FF0D57",
                                 "padding": 5, "font-weight": "bold"})
+
 
 # ------------------------------------------------------
 # -------------------- Model output --------------------
@@ -313,10 +327,11 @@ def model_output_display(df):
     return html.Div([html.Br(), html.H3("🔥 Gouda Praga 🔥"), html.Br()],
                     style={"background-color": "green" if df.iloc[-1]["preds"] > 0 else "red"})
 
+
 @app.callback(Output("selected-data", "children"), [Input("live-plot", "selectedData")])
 def model_output_display(k):
     return json.dumps(k, indent=2)
 
+
 if __name__ == "__main__":
-    # app.run_server(debug=True)
-    app.run_server()
+    app.run_server(debug=False, host='0.0.0.0', port=8049)
