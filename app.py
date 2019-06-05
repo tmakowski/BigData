@@ -173,16 +173,16 @@ app.layout = html.Div([
 # TWEETS taking and predicting
 @app.callback(Output("tweets-div", "children"), [Input("interval-clock", "n_intervals")])
 def update_tweets(n):
-    # list_of_files = glob.glob('/user/spark/test_online_evaluation/*.csv') # * means all if need specific format then *.csv
-    # latest_file = max(list_of_files, key=os.path.getctime)
-    # tweets = pd.read_csv(latest_file, sep=",", header=None, names=["id","text","preds"])
-    # tweets = tweets.dropna()
-
-    list_of_files = glob.glob('data/*_example.csv')
+    list_of_files = glob.glob('/user/spark/test_online_evaluation/*.csv') # * means all if need specific format then *.csv
     latest_file = max(list_of_files, key=os.path.getctime)
-    tweets = pd.read_csv(latest_file, index_col=0, parse_dates=[0])
-    tweets["preds"] = lasso.predict(cv.transform(tweets['text']))
-    tweets = tweets.reset_index()
+    tweets = pd.read_csv(latest_file, sep=",", header=None, names=["id","text","preds"])
+    tweets = tweets.dropna()
+
+    # list_of_files = glob.glob('data/*_example.csv')
+    # latest_file = max(list_of_files, key=os.path.getctime)
+    # tweets = pd.read_csv(latest_file, index_col=0, parse_dates=[0])
+    # tweets["preds"] = lasso.predict(cv.transform(tweets['text']))
+    # tweets = tweets.reset_index()
     return tweets.to_json()
 
 
